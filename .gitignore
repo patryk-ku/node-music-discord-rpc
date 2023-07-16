@@ -1,3 +1,13 @@
+# Credentials
+credentials.js
+
+# KDE Dolphin folder view settings file
+**/.directory
+
+# Build and dev server files
+build
+bundle.cjs
+
 # Logs
 logs
 *.log
