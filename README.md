@@ -17,7 +17,7 @@ To work, it needs the [playerctl](https://github.com/altdesktop/playerctl) packa
 ## Installation
 Download the executable from the [Releases](https://github.com/patryk-ku/node-music-discord-rpc/releases) page.
 
-Then simply execute the `node-music-discord-rpc` file. **For now script will crash without Discord running in the background.** This will be fixed later so you will be able to launch it at the system start-up but it's not ready yet.
+Then simply execute the `./node-music-discord-rpc` file in terminal. **For now script will crash without Discord running in the background.** This will be fixed later so you will be able to launch it at the system start-up but it's not ready yet.
 
 ## System usage
 
