@@ -3,7 +3,7 @@ const { exec } = require("child_process");
 const DiscordRPC = require('discord-rpc');
 const querystring = require("querystring");
 const AutoClient = require("./discord-auto-rpc/index.js");
-// const { readFileSync } = require("fs");
+const { readFileSync } = require("fs");
 
 // credentials:
 const { lastfmApiKey, clientId } = require('./credentials.js');
@@ -60,19 +60,23 @@ async function fetchAlbumUrl(artist, album) {
 }
 
 // Loading config file if exist
-// let rpcOptions;
-// try {
-//     rpcOptions = readFileSync('./node-rpc-config.jso');
-//     rpcOptions = JSON.parse(rpcOptions);
-
-//     console.log('[info] Config file found.')
-// } catch(error) {
-//     rpcOptions = {
-//         test: 'test'
-//     }
-// }
-
-// console.log('CONGIF===========:' + rpcOptions);
+let rpcOptions;
+try {
+    rpcOptions = readFileSync('./node-rpc-config.json');
+    rpcOptions = JSON.parse(rpcOptions);
+    console.log('[info] Config file found.');
+} catch (error) {
+    console.log('[info] Config file not found, using default options.');
+    rpcOptions = {
+        refreshRate: 15,
+        profileButton: false,
+        lastfmNickname: "",
+        songButton: false,
+        placeholderCover: true
+    }
+}
+// todo: add validation
+console.log(rpcOptions);
 
 // Rich Presence
 // const rpc = new DiscordRPC.Client({ transport: 'ipc' });
@@ -89,7 +93,7 @@ let nowPlaying = {
     status: 'playing'
 };
 
-async function updateStatus(nowPlaying, refreshInterval) {
+async function updateStatus(nowPlaying) {
     if (!rpc) {
         console.log('[warn] Cant connect to discord');
         return;
@@ -166,7 +170,7 @@ async function updateStatus(nowPlaying, refreshInterval) {
         if (nowPlaying.status == 'playing' && !isMetadataUpdated) {
             nowPlaying.time = Number(new Date()) - nowPlaying.timeElapsed;
         } else if (nowPlaying.status == 'paused' && !isMetadataUpdated) {
-            nowPlaying.timeElapsed += refreshInterval * 1000;
+            nowPlaying.timeElapsed += rpcOptions.refreshRate * 1000;
         }
     }
 
@@ -184,16 +188,20 @@ async function updateStatus(nowPlaying, refreshInterval) {
                 isTrackRepeated = true;
             }
         } else {
-            console.log(' [info] Cannot get track lenght, repeating track detection disabled');
+            if (isMetadataUpdated) { //tmp
+                console.log(' Cannot get track lenght, repeating track detection disabled');
+            }
         }
     } else {
-        console.log(' [info] Cannot get track lenght, repeating track detection disabled');
+        if (isMetadataUpdated) { //tmp
+            console.log(' Cannot get track lenght, repeating track detection disabled');
+        }
     }
 
     // Updating timer and skipping if nothing changed
     if (!isMetadataUpdated && !isStatusUpdated && !isTrackRepeated) {
         if (nowPlaying.status == 'playing' && !isTrackRepeated) {
-            nowPlaying.timeElapsed += refreshInterval * 1000;
+            nowPlaying.timeElapsed += rpcOptions.refreshRate * 1000;
         }
         return;
     }
@@ -233,17 +241,29 @@ async function updateStatus(nowPlaying, refreshInterval) {
         largeImageText: 'album: ' + metadata.album,
         smallImageKey: nowPlaying.status, // playing or stopped icon
         smallImageText: nowPlaying.status, // playing or stoppped
-        instance: false,
-        buttons: [
-            { label: "Check last.fm profile", url: "https://example.com" },
-            { label: "Check this song", url: "https://example.com" }
-        ]
+        instance: false
+        // buttons: [
+        //     { label: "Check last.fm profile", url: `https://www.last.fm/user/${rpcOptions.lastfmNickname}` },
+        //     { label: "Check this song", url: "https://example.com" }
+        // ]
     }
 
     if (nowPlaying.status == 'playing') {
         activityData.startTimestamp = nowPlaying.time;
     } else {
         activityData.endTimestamp = 1;
+    }
+
+    // Rich presence buttons (max 2)
+    let buttons = [];
+    if (rpcOptions.profileButton) {
+        buttons.push({ label: "Check last.fm profile", url: `https://www.last.fm/user/${rpcOptions.lastfmNickname}` });
+    }
+    if (rpcOptions.songButton) {
+        buttons.push({ label: "Check this song", url: "https://example.com" });
+    }
+    if (rpcOptions.profileButton || rpcOptions.songButton) {
+        activityData.buttons = buttons;
     }
 
     //tmp
@@ -255,41 +275,26 @@ async function updateStatus(nowPlaying, refreshInterval) {
 
 // rpc.on('ready', () => { // no idea why this stopped working
 rpc.once('connected', () => {
-    // console.log('Connected to Discord. =========');
-    // clearInterval(setup);
-    // let seconds = 15;
-    let seconds = 6;
     isConnected = true; //tmp
-    
-    updateStatus(nowPlaying, seconds);
+
+    // updateStatus(nowPlaying);
 
     setInterval(() => {
-        updateStatus(nowPlaying, seconds);
-    }, seconds * 1000);
+        updateStatus(nowPlaying);
+    }, rpcOptions.refreshRate * 1000);
 });
-
 
 rpc.transport.on('close', () => {
     console.log('[warn] Lost connection with Discord.');
     isConnected = false;
 });
 
-// rpc.on('rpcReconnected', () => {
-//     console.log('[info] Reconnected with Discord.');
-// });
-
 rpc.on('connected', () => {
     console.log('[info] Connected with Discord.');
     isConnected = true;
-    updateStatus(nowPlaying, seconds);
+    updateStatus(nowPlaying);
 });
 
 // rpc.login({ clientId }).catch(console.error);
 console.log('[info] Waiting for Discord to start...');
 rpc.endlessLogin({ clientId }).catch(console.error);
-
-// let setup = setInterval(() => {
-//     console.log('discord not running...')
-
-//     rpc.endlessLogin({ clientId }).catch(console.error);
-// }, 5 * 1000);
