@@ -50,10 +50,11 @@ class AutoClient extends DiscordRPC.Client {
     }
 
     async endlessLogin(options) {
-        if (this.options.transport != "ipc")
+        if (this.options.transport != "ipc") {
             throw new Error(
                 "Endless login is currently only supported on the IPC transport"
             );
+        }
 
         await this.endlessConnect(options.clientId);
 

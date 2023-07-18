@@ -3,6 +3,7 @@ const { exec } = require("child_process");
 const DiscordRPC = require('discord-rpc');
 const querystring = require("querystring");
 const AutoClient = require("./discord-auto-rpc/index.js");
+// const { readFileSync } = require("fs");
 
 // credentials:
 const { lastfmApiKey, clientId } = require('./credentials.js');
@@ -32,7 +33,6 @@ async function getMetadata() {
     let array = output.split("\n");
 
     array = array.filter(str => str.search(':') > -1);
-    // array = array.map(str => str.split(':')[1]);
     array = array.map(str => str.slice(str.search(':') + 1));
     let metadata = {};
     array = array.forEach(str => {
@@ -59,8 +59,22 @@ async function fetchAlbumUrl(artist, album) {
     return response.album.image[3]['#text'];
 }
 
-//rpc
+// Loading config file if exist
+// let rpcOptions;
+// try {
+//     rpcOptions = readFileSync('./node-rpc-config.jso');
+//     rpcOptions = JSON.parse(rpcOptions);
 
+//     console.log('[info] Config file found.')
+// } catch(error) {
+//     rpcOptions = {
+//         test: 'test'
+//     }
+// }
+
+// console.log('CONGIF===========:' + rpcOptions);
+
+// Rich Presence
 // const rpc = new DiscordRPC.Client({ transport: 'ipc' });
 const rpc = new AutoClient({ transport: "ipc" });
 
@@ -73,7 +87,7 @@ let nowPlaying = {
     timeElapsed: 0,
     url: '',
     status: 'playing'
-}
+};
 
 async function updateStatus(nowPlaying, refreshInterval) {
     if (!rpc) {
@@ -239,12 +253,14 @@ async function updateStatus(nowPlaying, refreshInterval) {
     }
 }
 
-rpc.on('ready', () => {
+// rpc.on('ready', () => { // no idea why this stopped working
+rpc.once('connected', () => {
     // console.log('Connected to Discord. =========');
     // clearInterval(setup);
     // let seconds = 15;
     let seconds = 6;
-
+    isConnected = true; //tmp
+    
     updateStatus(nowPlaying, seconds);
 
     setInterval(() => {
