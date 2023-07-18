@@ -2,6 +2,7 @@
 const { exec } = require("child_process");
 const DiscordRPC = require('discord-rpc');
 const querystring = require("querystring");
+const AutoClient = require("./discord-auto-rpc/index.js");
 
 // credentials:
 const { lastfmApiKey, clientId } = require('./credentials.js');
@@ -60,8 +61,10 @@ async function fetchAlbumUrl(artist, album) {
 
 //rpc
 
-let rpc = new DiscordRPC.Client({ transport: 'ipc' });
+// const rpc = new DiscordRPC.Client({ transport: 'ipc' });
+const rpc = new AutoClient({ transport: "ipc" });
 
+let isConnected = false;
 let nowPlaying = {
     album: '',
     artist: '',
@@ -74,7 +77,12 @@ let nowPlaying = {
 
 async function updateStatus(nowPlaying, refreshInterval) {
     if (!rpc) {
-        console.log('Cant connect to discord');
+        console.log('[warn] Cant connect to discord');
+        return;
+    }
+
+    //tmp (song time is not updating with this while discord is closed)
+    if (!isConnected) {
         return;
     }
 
@@ -97,20 +105,20 @@ async function updateStatus(nowPlaying, refreshInterval) {
 
     // Checking if main metadata values exist
     if (!metadata) {
-        console.log('Failed to fetch metadata from current track');
+        console.log('[warn] Failed to fetch metadata from current track');
         rpc.clearActivity();
         return
     }
     if (!metadata.title) {
         if (metadata.title.length < 1) {
-            console.warn('Missing track name');
+            console.warn('[warn] Missing track name');
             rpc.clearActivity();
             return;
         }
     }
     if (!metadata.album) {
         if (metadata.album.length < 1) {
-            console.warn('Missing album name');
+            console.warn('[warn] Missing album name');
             rpc.clearActivity();
             return;
             // to do: there are track without albums, fix this later
@@ -118,7 +126,7 @@ async function updateStatus(nowPlaying, refreshInterval) {
     }
     if (!metadata.artist) {
         if (metadata.artist.length < 1) {
-            console.warn('Missing artist name');
+            console.warn('[warn] Missing artist name');
             rpc.clearActivity();
             return;
         }
@@ -132,7 +140,7 @@ async function updateStatus(nowPlaying, refreshInterval) {
         metadata.album != nowPlaying.album
     ) {
         isMetadataUpdated = true;
-        console.log(`${metadata.title} - ${metadata.album} - ${metadata.artist}`);
+        console.log(`[song] ${metadata.title} - ${metadata.album} - ${metadata.artist}`);
     }
 
     // Checking if music is playing or stopped
@@ -140,7 +148,7 @@ async function updateStatus(nowPlaying, refreshInterval) {
     if (playerStatus != nowPlaying.status) {
         isStatusUpdated = true;
         nowPlaying.status = playerStatus;
-        console.log(nowPlaying.status);
+        console.log(' music ' + nowPlaying.status);
         if (nowPlaying.status == 'playing' && !isMetadataUpdated) {
             nowPlaying.time = Number(new Date()) - nowPlaying.timeElapsed;
         } else if (nowPlaying.status == 'paused' && !isMetadataUpdated) {
@@ -162,10 +170,10 @@ async function updateStatus(nowPlaying, refreshInterval) {
                 isTrackRepeated = true;
             }
         } else {
-            console.log('Cannot get track lenght, repeating track detection disabled');
+            console.log(' [info] Cannot get track lenght, repeating track detection disabled');
         }
     } else {
-        console.log('Cannot get track lenght, repeating track detection disabled');
+        console.log(' [info] Cannot get track lenght, repeating track detection disabled');
     }
 
     // Updating timer and skipping if nothing changed
@@ -212,6 +220,10 @@ async function updateStatus(nowPlaying, refreshInterval) {
         smallImageKey: nowPlaying.status, // playing or stopped icon
         smallImageText: nowPlaying.status, // playing or stoppped
         instance: false,
+        buttons: [
+            { label: "Check last.fm profile", url: "https://example.com" },
+            { label: "Check this song", url: "https://example.com" }
+        ]
     }
 
     if (nowPlaying.status == 'playing') {
@@ -220,19 +232,48 @@ async function updateStatus(nowPlaying, refreshInterval) {
         activityData.endTimestamp = 1;
     }
 
-    rpc.setActivity(activityData);
-    console.log('Updated rich presence');
+    //tmp
+    if (isConnected) {
+        rpc.setActivity(activityData);
+        console.log(' updated rich presence');
+    }
 }
 
 rpc.on('ready', () => {
-    let seconds = 15;
-    // let seconds = 5;
+    // console.log('Connected to Discord. =========');
+    // clearInterval(setup);
+    // let seconds = 15;
+    let seconds = 6;
 
     updateStatus(nowPlaying, seconds);
 
-    setInterval(function () {
+    setInterval(() => {
         updateStatus(nowPlaying, seconds);
     }, seconds * 1000);
 });
 
-rpc.login({ clientId }).catch(console.error);
+
+rpc.transport.on('close', () => {
+    console.log('[warn] Lost connection with Discord.');
+    isConnected = false;
+});
+
+// rpc.on('rpcReconnected', () => {
+//     console.log('[info] Reconnected with Discord.');
+// });
+
+rpc.on('connected', () => {
+    console.log('[info] Connected with Discord.');
+    isConnected = true;
+    updateStatus(nowPlaying, seconds);
+});
+
+// rpc.login({ clientId }).catch(console.error);
+console.log('[info] Waiting for Discord to start...');
+rpc.endlessLogin({ clientId }).catch(console.error);
+
+// let setup = setInterval(() => {
+//     console.log('discord not running...')
+
+//     rpc.endlessLogin({ clientId }).catch(console.error);
+// }, 5 * 1000);
