@@ -4,7 +4,7 @@
   "description": "Advanced discord music rich presence status with support for album covers",
   "main": "app.js",
   "scripts": {
-    "build": "rimraf bundle.cjs && npx esbuild app.js --bundle --outfile=bundle.cjs --format=cjs --platform=node && rimraf build && npx pkg bundle.cjs --t node18-linux -o ./build/node_music_discord_rpc"
+    "build": "rimraf bundle.cjs && npx esbuild app.js --bundle --outfile=bundle.cjs --format=cjs --platform=node && rimraf ./build/node-music-discord-rpc && npx pkg bundle.cjs --t node18-linux -o ./build/node-music-discord-rpc"
   },
   "keywords": [],
   "author": "Patryk Kurdziel",

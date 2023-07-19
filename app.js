@@ -1,6 +1,5 @@
 'use strict';
 const { exec } = require("child_process");
-const DiscordRPC = require('discord-rpc');
 const querystring = require("querystring");
 const AutoClient = require("./discord-auto-rpc/index.js");
 const { readFileSync } = require("fs");
@@ -50,11 +49,19 @@ async function getMetadata() {
 // fetch album image link from last fm api
 async function fetchAlbumUrl(artist, album) {
     const url = `http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=${lastfmApiKey}&artist=${querystring.escape(artist)}&album=${querystring.escape(album)}&autocorrect=0&format=json`;
-    const response = await fetch(url).then(res => res.json());
+    const response = await fetch(url).then(res => res.json()).catch(error => {return error});
     // console.log(response.album.tracks);
-    // todo: add error handling and no image provided situation
 
-    // console.log(' - fetched image url for: ' + album + ' by ' + artist);
+    if (response.error) {
+        return '';
+    }
+    if (!response.album) {
+        return '';
+    }
+    if (!response.album.image) {
+        return '';
+    }
+
     console.log(' - fetched album data from last.fm api');
     return response.album.image[3]['#text'];
 }
@@ -71,15 +78,14 @@ try {
         refreshRate: 15,
         profileButton: false,
         lastfmNickname: "",
-        songButton: false,
+        searchSongButton: true,
         placeholderCover: true
-    }
+    };
 }
 // todo: add validation
 console.log(rpcOptions);
 
 // Rich Presence
-// const rpc = new DiscordRPC.Client({ transport: 'ipc' });
 const rpc = new AutoClient({ transport: "ipc" });
 
 let isConnected = false;
@@ -198,6 +204,7 @@ async function updateStatus(nowPlaying) {
         }
     }
 
+    // todo: when reconnectin should skip this:
     // Updating timer and skipping if nothing changed
     if (!isMetadataUpdated && !isStatusUpdated && !isTrackRepeated) {
         if (nowPlaying.status == 'playing' && !isTrackRepeated) {
@@ -235,17 +242,13 @@ async function updateStatus(nowPlaying) {
     }
 
     let activityData = {
-        details: metadata.title,
-        state: 'by: ' + metadata.artist,
-        largeImageKey: nowPlaying.url,
-        largeImageText: 'album: ' + metadata.album,
-        smallImageKey: nowPlaying.status, // playing or stopped icon
-        smallImageText: nowPlaying.status, // playing or stoppped
+        details: metadata.title, // song title
+        state: 'by: ' + metadata.artist, // artist name
+        largeImageKey: nowPlaying.url, // cover image url
+        largeImageText: 'album: ' + metadata.album, // album title on cover hover
+        smallImageKey: nowPlaying.status, // playing or stopped small icon
+        smallImageText: nowPlaying.status, // playing or stoppped icon hover
         instance: false
-        // buttons: [
-        //     { label: "Check last.fm profile", url: `https://www.last.fm/user/${rpcOptions.lastfmNickname}` },
-        //     { label: "Check this song", url: "https://example.com" }
-        // ]
     }
 
     if (nowPlaying.status == 'playing') {
@@ -257,12 +260,12 @@ async function updateStatus(nowPlaying) {
     // Rich presence buttons (max 2)
     let buttons = [];
     if (rpcOptions.profileButton) {
-        buttons.push({ label: "Check last.fm profile", url: `https://www.last.fm/user/${rpcOptions.lastfmNickname}` });
+        buttons.push({ label: "Open user's last.fm profile", url: `https://www.last.fm/user/${querystring.escape(rpcOptions.lastfmNickname)}` });
     }
-    if (rpcOptions.songButton) {
-        buttons.push({ label: "Check this song", url: "https://example.com" });
+    if (rpcOptions.searchSongButton) {
+        buttons.push({ label: "Search this song on YouTube", url: 'https://www.youtube.com/results?search_query=' + querystring.escape(`${nowPlaying.artist} - ${nowPlaying.title}`) });
     }
-    if (rpcOptions.profileButton || rpcOptions.songButton) {
+    if (rpcOptions.profileButton || rpcOptions.searchSongButton) {
         activityData.buttons = buttons;
     }
 
@@ -278,7 +281,6 @@ rpc.once('connected', () => {
     isConnected = true; //tmp
 
     // updateStatus(nowPlaying);
-
     setInterval(() => {
         updateStatus(nowPlaying);
     }, rpcOptions.refreshRate * 1000);
