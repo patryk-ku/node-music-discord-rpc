@@ -17,7 +17,24 @@ To work, it needs the [playerctl](https://github.com/altdesktop/playerctl) packa
 ## Installation
 Download the executable from the [Releases](https://github.com/patryk-ku/node-music-discord-rpc/releases) page.
 
-Then simply execute the `./node-music-discord-rpc` file in terminal. **For now script will crash without Discord running in the background.** This will be fixed later so you will be able to launch it at the system start-up but it's not ready yet.
+Then simply execute the `./node-music-discord-rpc` file in terminal. ~~For now script will crash without Discord running in the background. This will be fixed later so you will be able to launch it at the system start-up but it's not ready yet.~~ ([fixed here](https://github.com/patryk-ku/node-music-discord-rpc/commit/ace9612a5eb39008b540a7c51c0d09113dbbb115)). Now it's safe to run the script at the system startup. It will wait and check every 15 seconds if Discord is running. Also it is safe to exit Discord while script is running and it will reconnect automatically latter.
+
+## Configuration
+
+During startup, the script will check for the presence of a configuration file `node-rpc-config.json` in the running directory. Without a configuration file, it will use the default settings. An example configuration file with default settings can be found here or in the repository under the same name.
+
+```
+{
+    "refreshRate": 15,
+    "profileButton": false,
+    "lastfmNickname": "your-lastfm-nickname",
+    "searchSongButton": true,
+    "placeholderCover": true
+}
+```
+Config options description:
+
+*wip*
 
 ## System usage
 
@@ -25,7 +42,7 @@ As this is written in JavaScript and run using node.js you might think that the 
 
 ## Running with locally installed node.js
 
-wip
+*wip*
 
 ## Compile from source
 
