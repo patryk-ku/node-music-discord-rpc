@@ -10,7 +10,6 @@ class AutoClient extends DiscordRPC.Client {
     }
 
     onClose() {
-        // console.log('Lost connection with Discord.');
         if (!this.closeinterval) {
             this.closeinterval = setInterval(() => {
                 this.transport
@@ -18,8 +17,6 @@ class AutoClient extends DiscordRPC.Client {
                     .then(() => {
                         this.closeinterval && clearInterval(this.closeinterval);
                         this.closeinterval = undefined;
-                        // console.log('Reconnected with Discord.');
-                        // this.emit("rpcReconnected");
                     })
                     .catch(() => { });
             }, 10 * 1000);
@@ -43,7 +40,6 @@ class AutoClient extends DiscordRPC.Client {
             fn();
 
             this.once("connected", () => {
-                // console.log('Connected with Discord.');
                 res();
             });
         });

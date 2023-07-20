@@ -7,6 +7,7 @@ credentials.js
 # Build and dev server files
 build
 bundle.cjs
+node-rpc-cache.json
 
 # Logs
 logs
