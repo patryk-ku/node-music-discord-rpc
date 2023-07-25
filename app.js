@@ -7,6 +7,8 @@ const { readFileSync, writeFileSync } = require("fs");
 // credentials:
 const { lastfmApiKey, clientId } = require('./credentials.js');
 
+// process.removeAllListeners('warning'); // to disable fetch warning, tmp until node 20 pkg update
+
 // passing given options and parameters to playerctl command
 function playerctl(command) {
     return new Promise((resolve, reject) => {
@@ -85,7 +87,7 @@ async function fetchAlbumUrl(artist, album) {
         writeFileSync('./node-rpc-cache.json', cacheFile);
     }
 
-    console.log(' - fetched album data from last.fm api');
+    console.log(' -> fetched album data from last.fm api');
     return response.album.image[3]['#text'];
 }
 
@@ -113,23 +115,102 @@ function urlCache(artist, album) {
 }
 
 // Loading config file if exist
+const rpcOptionsDefault = {
+    refreshRate: 15,
+    profileButton: false,
+    lastfmNickname: "your-lastfm-nickname",
+    searchSongButton: true,
+    placeholderCover: true,
+    disableCache: false
+};
 let rpcOptions;
 try {
     rpcOptions = readFileSync('./node-rpc-config.json');
     rpcOptions = JSON.parse(rpcOptions);
     console.log('[info] Config file found.');
 } catch (error) {
-    console.log('[info] Config file not found, using default options.');
-    rpcOptions = {
-        refreshRate: 15,
-        profileButton: false,
-        lastfmNickname: "",
-        searchSongButton: true,
-        placeholderCover: true,
-        disableCache: false
-    };
+    console.log("[info] Config file not found or it's not valid .json file, using default options.");
+    rpcOptions = rpcOptionsDefault;
 }
-// todo: add validation
+
+// Config file validation:
+const validation = {
+    refreshRate: false,
+    profileButton: false,
+    lastfmNickname: false,
+    searchSongButton: false,
+    placeholderCover: false,
+    disableCache: false
+};
+
+if (typeof rpcOptions !== 'object') {
+    console.log('[warn] Problem with config file, using default options.')
+    rpcOptions = rpcOptionsDefault;
+} else {
+    if (rpcOptions.refreshRate) {
+        if (typeof rpcOptions.refreshRate === 'number') {
+            if (rpcOptions.refreshRate >= 5) {
+                validation.refreshRate = true;
+            }
+        }
+    }
+
+    if (typeof rpcOptions.profileButton === 'boolean') {
+        validation.profileButton = true;
+    }
+
+    if (rpcOptions.lastfmNickname) {
+        if (typeof rpcOptions.lastfmNickname === 'string' && rpcOptions.lastfmNickname.length > 0) {
+            validation.lastfmNickname = true;
+        }
+    }
+
+    if (typeof rpcOptions.searchSongButton === 'boolean') {
+        validation.searchSongButton = true;
+    }
+
+    if (typeof rpcOptions.placeholderCover === 'boolean') {
+        validation.placeholderCover = true;
+    }
+
+    if (typeof rpcOptions.disableCache === 'boolean') {
+        validation.disableCache = true;
+    }
+
+}
+
+// setting default if value from user config is wrong
+if (!validation.refreshRate) {
+    rpcOptions.refreshRate = rpcOptionsDefault.refreshRate;
+    console.log('[error] Error in the configuration file. The value of "refreshRate" can only be a number equal to or greater than 5. Using default value.');
+}
+
+if (!validation.profileButton) {
+    rpcOptions.profileButton = rpcOptionsDefault.profileButton;
+    console.log('[error] Error in the configuration file. The value of "profileButton" can only be true or false. Using default value.');
+}
+
+if (!validation.lastfmNickname) {
+    rpcOptions.lastfmNickname = rpcOptionsDefault.lastfmNickname;
+    rpcOptions.profileButton = false;
+    console.log('[error]  Error in the configuration file. The value of "lastfmNickname" can only be a text and cannot be empty.');
+}
+
+if (!validation.searchSongButton) {
+    rpcOptions.searchSongButton = rpcOptionsDefault.searchSongButton;
+    console.log('[error] Error in the configuration file. The value of "searchSongButton" can only be true or false. Using default value.');
+}
+
+if (!validation.placeholderCover) {
+    rpcOptions.placeholderCover = rpcOptionsDefault.placeholderCover;
+    console.log('[error] Error in the configuration file. The value of "placeholderCover" can only be true or false. Using default value.');
+}
+
+if (!validation.disableCache) {
+    rpcOptions.disableCache = rpcOptionsDefault.disableCache;
+    console.log('[error] Error in the configuration file. The value of "disableCache" can only be true or false. Using default value.');
+}
+
 console.log(rpcOptions);
 
 // Rich Presence
@@ -211,7 +292,7 @@ async function updateStatus(nowPlaying) {
         metadata.album != nowPlaying.album
     ) {
         isMetadataUpdated = true;
-        console.log(`[song] ${metadata.title} - ${metadata.album} - ${metadata.artist}`);
+        console.log(`[song] ${metadata.title} - ${metadata.artist} (album: ${metadata.album})`);
     }
 
     // Checking if music is playing or stopped
@@ -219,7 +300,7 @@ async function updateStatus(nowPlaying) {
     if (playerStatus != nowPlaying.status) {
         isStatusUpdated = true;
         nowPlaying.status = playerStatus;
-        console.log(' music ' + nowPlaying.status);
+        console.log('[status] music ' + nowPlaying.status);
         if (nowPlaying.status == 'playing' && !isMetadataUpdated) {
             nowPlaying.time = Number(new Date()) - nowPlaying.timeElapsed;
         } else if (nowPlaying.status == 'paused' && !isMetadataUpdated) {
@@ -242,12 +323,12 @@ async function updateStatus(nowPlaying) {
             }
         } else {
             if (isMetadataUpdated) { //tmp
-                console.log(' Cannot get track lenght, repeating track detection disabled');
+                console.log(' -> Cannot get track lenght, repeating track detection disabled');
             }
         }
     } else {
         if (isMetadataUpdated) { //tmp
-            console.log(' Cannot get track lenght, repeating track detection disabled');
+            console.log(' -> Cannot get track lenght, repeating track detection disabled');
         }
     }
 
@@ -265,13 +346,11 @@ async function updateStatus(nowPlaying) {
         nowPlaying.url = urlCache(metadata.artist, metadata.album);
         if (nowPlaying.url == '') {
             nowPlaying.url = await fetchAlbumUrl(metadata.artist, metadata.album);
-        } else {
-            console.log(' - album url loaded from cache');
         }
 
         if (nowPlaying.url == '') {
             nowPlaying.url = 'missing-cover';
-            console.log(' - no image for given album');
+            console.log(' -> no image for given album');
         }
     }
 
