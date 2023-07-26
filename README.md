@@ -2,9 +2,11 @@
 
 ![example](https://github.com/patryk-ku/node-music-discord-rpc/assets/38609910/8e664517-8841-42fa-9a1e-876fc5ee4c30)
 
-Discord music rich presence status with **support for album covers**. Written in JavaScript. It can be used without locally installed node.js because it is packaged as a stand-alone executable file.
+Discord music rich presence status with **support for album covers** and optional buttons with links to your last.fm profile and to search current song on YouTube. 
 
-**Currently only Linux is supported.** Support for Windows maybe in the future but not sure.
+Written in JavaScript. It can be used without locally installed node.js because it is packaged as a stand-alone executable file.
+
+**Currently only Linux is supported.** Support for Windows in the future.
 
 > **⚠️ Notice:** It's in pre-alpha state of development and may not work properly. Expect bugs, errors etc.
 
