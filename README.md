@@ -23,18 +23,27 @@ Then simply execute the `./node-music-discord-rpc` file in terminal. ~~For now s
 
 During startup, the script will check for the presence of a configuration file `node-rpc-config.json` in the running directory. Without a configuration file, it will use the default settings. An example configuration file with default settings can be found here or in the repository under the same name.
 
-```
+```json
 {
     "refreshRate": 15,
     "profileButton": false,
     "lastfmNickname": "your-lastfm-nickname",
     "searchSongButton": true,
-    "placeholderCover": true
+    "placeholderCover": true,
+    "disableCache": false
 }
 ```
+
 Config options description:
 
-*wip*
+| option | description |
+| ----------- | ----------- |
+| `refreshRate` | Time in seconds between every status updates. The smallest allowed value is 5. |
+| `profileButton` | Display a button with a link to your profile on last.fm. Allowed values: true/false. |
+| `lastfmNickname` | Your last.fm nickname. It must be set for the `profileButton` button to work correctly. |
+| `searchSongButton` | Display button to search for the current song on YouTube. Allowed values: true/false. |
+| `placeholderCover` | If the album has no cover display the default placeholder cover. If false status will only show text. Allowed values: true/false. |
+| `disableCache` | If true it will disable the script's ability to use the cache. It is recommended to set the option to false. If cache remains enabled then each new album will be added to the cache file. Then each time the album is played again, the album cover link will not need to be downloaded again from the last.fm servers. The cache file will not grow large because the cover images are not saved directly, but only the links to them. Allowed values: true/false. |
 
 ## System usage
 
@@ -42,7 +51,26 @@ As this is written in JavaScript and run using node.js you might think that the 
 
 ## Running with locally installed node.js
 
-*wip*
+Follow steps from "Compile from source" but:
+
+- Instead of:
+
+   ```
+   npm install
+   ```
+
+   run:
+
+   ```
+   npm install --omit=dev
+   ```
+- Don't build entire script but instead run it everytime using:
+
+   ```
+   node app.js
+   ```
+
+This way, the script will be running with locally installed node.js and not the one bundled with the script. The minimum version of node.js is 18. But tbh there is not much advantage of this. Only slightly less ram usage and the script will take up less disk space.
 
 ## Compile from source
 
