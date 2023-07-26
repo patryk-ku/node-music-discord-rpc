@@ -11,12 +11,15 @@ Written in JavaScript. It can be used without locally installed node.js because 
 > **⚠️ Notice:** It's in pre-alpha state of development and may not work properly. Expect bugs, errors etc.
 
 ## Supported players
+
 Any player or app with [MPRIS](https://wiki.archlinux.org/title/MPRIS) support, also including both Google Chrome and Firefox.
 
 ## Requirements
+
 To work, it needs the [playerctl](https://github.com/altdesktop/playerctl) package installed. On it's github page you can find instructions on how to install it for your distribution, but it should be available in the  repositories of the majority of distributions.
 
 ## Installation
+
 Download the executable from the [Releases](https://github.com/patryk-ku/node-music-discord-rpc/releases) page.
 
 Then simply execute the `./node-music-discord-rpc` file in terminal. ~~For now script will crash without Discord running in the background. This will be fixed later so you will be able to launch it at the system start-up but it's not ready yet.~~ ([fixed here](https://github.com/patryk-ku/node-music-discord-rpc/commit/ace9612a5eb39008b540a7c51c0d09113dbbb115)). Now it's safe to run the script at the system startup. It will wait and check every 15 seconds if Discord is running. Also it is safe to exit Discord while script is running and it will reconnect automatically latter.
