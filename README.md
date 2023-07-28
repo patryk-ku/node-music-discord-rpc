@@ -1,8 +1,12 @@
 # node-music-discord-rpc
 
+Discord music rich presence status with **support for album covers** and optional buttons with links to your last.fm profile and to search current song on YouTube.
+
 ![example](https://github.com/patryk-ku/node-music-discord-rpc/assets/38609910/8e664517-8841-42fa-9a1e-876fc5ee4c30)
 
-Discord music rich presence status with **support for album covers** and optional buttons with links to your last.fm profile and to search current song on YouTube. 
+![discord-rpc1](https://github.com/patryk-ku/node-music-discord-rpc/assets/38609910/8ae30e1d-ef0f-453c-9cca-e9f52ef45b8e)
+
+![discord-rpc2](https://github.com/patryk-ku/node-music-discord-rpc/assets/38609910/f6090454-c6cf-4e00-8783-27cd5e1c3f08)
 
 Written in JavaScript. It can be used without locally installed node.js because it is packaged as a stand-alone executable file.
 
