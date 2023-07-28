@@ -217,6 +217,7 @@ console.log(rpcOptions);
 const rpc = new AutoClient({ transport: "ipc" });
 
 let isConnected = false;
+let isPlayerOpen = true;
 let nowPlaying = {
     album: '',
     artist: '',
@@ -227,13 +228,13 @@ let nowPlaying = {
     status: 'playing'
 };
 
-async function updateStatus(nowPlaying) {
+async function updateStatus(nowPlaying, isForced = false) {
     if (!rpc) {
-        console.log('[warn] Cant connect to discord');
+        console.log('[error] Cant connect to discord');
         return;
     }
 
-    //tmp (song time is not updating with this while discord is closed)
+    // save resources, function end here without connection with Discord, drawback: song time is not updating
     if (!isConnected) {
         return;
     }
@@ -242,10 +243,19 @@ async function updateStatus(nowPlaying) {
     try {
         playerStatus = await playerctl('status');
     } catch (error) {
-        console.log(error.message);
-        rpc.clearActivity();
+        if (isPlayerOpen) {
+            console.log('[info] No players found by playerctl. Waiting for any player with MPRIS support to start...');
+            console.log(error.message);
+            rpc.clearActivity();
+        }
+        isPlayerOpen = false;
         return;
     }
+
+    if (!isPlayerOpen) {
+        console.log('[info] Detected player with MPRIS support. Discord Rich Presence starting.');
+    }
+
     playerStatus = playerStatus.trim().toLowerCase();
 
     if (!playerStatus) {
@@ -316,7 +326,7 @@ async function updateStatus(nowPlaying) {
             // console.log(Number(metadata.length.slice(0, -3)));
             // .slice(0, -3) is temporary solution, need to check other players output for sure
             if ((Number(metadata.length.slice(0, -3)) < nowPlaying.timeElapsed + Number(rpcOptions.refreshRate) && !isMetadataUpdated)) {
-                console.log('track repeated');
+                console.log('[status] track repeated');
                 nowPlaying.timeElapsed = 0;
                 nowPlaying.time = Number(new Date());
                 isTrackRepeated = true;
@@ -332,9 +342,15 @@ async function updateStatus(nowPlaying) {
         }
     }
 
-    // todo: when reconnecting should skip this:
+    // To Do: reset time when discord closed but player not (not sure if needed tbh)
+    // Update metadata if player restarted
+    if (!isPlayerOpen) {
+        isMetadataUpdated = true;
+    }
+    isPlayerOpen = true;
+
     // Updating timer and skipping if nothing changed
-    if (!isMetadataUpdated && !isStatusUpdated && !isTrackRepeated) {
+    if (!isMetadataUpdated && !isStatusUpdated && !isTrackRepeated && !isForced) {
         if (nowPlaying.status == 'playing' && !isTrackRepeated) {
             nowPlaying.timeElapsed += rpcOptions.refreshRate * 1000;
         }
@@ -401,11 +417,9 @@ async function updateStatus(nowPlaying) {
         activityData.buttons = buttons;
     }
 
-    //tmp todo: if its not connected skip entire function
-    if (isConnected) {
-        rpc.setActivity(activityData);
-        console.log(' updated rich presence');
-    }
+    rpc.setActivity(activityData);
+    console.log(' updated rich presence');
+
 }
 
 // rpc.on('ready', () => { // no idea why this stopped working
@@ -418,12 +432,13 @@ rpc.once('connected', () => {
 rpc.transport.on('close', () => {
     console.log('[warn] Lost connection with Discord.');
     isConnected = false;
+    isPlayerOpen = true;
 });
 
 rpc.on('connected', () => {
     console.log('[info] Connected with Discord.');
     isConnected = true;
-    updateStatus(nowPlaying);
+    updateStatus(nowPlaying, true);
 });
 
 console.log('[info] Waiting for Discord to start...');
