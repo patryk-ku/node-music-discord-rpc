@@ -342,9 +342,8 @@ async function updateStatus(nowPlaying, isForced = false) {
         }
     }
 
-    // To Do: reset time when discord closed but player not (not sure if needed tbh)
     // Update metadata if player restarted
-    if (!isPlayerOpen) {
+    if (!isPlayerOpen || isForced) {
         isMetadataUpdated = true;
     }
     isPlayerOpen = true;
