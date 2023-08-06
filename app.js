@@ -405,11 +405,15 @@ async function updateStatus(nowPlaying, isForced = false) {
     let activityData = {
         details: metadata.title, // song title
         state: 'by: ' + metadata.artist, // artist name
-        largeImageKey: nowPlaying.url, // cover image url
-        largeImageText: 'album: ' + metadata.album, // album title on cover hover
-        smallImageKey: nowPlaying.status, // playing or stopped small icon
-        smallImageText: nowPlaying.status, // playing or stoppped icon hover
         instance: false
+    }
+
+    // If no album image and placeholderCover option enabled do not display any image in status
+    if (!(nowPlaying.url === 'missing-cover' && !rpcOptions.placeholderCover)) {
+        activityData.largeImageKey = nowPlaying.url; // cover image url
+        activityData.largeImageText = 'album: ' + metadata.album; // album title on cover hover
+        activityData.smallImageKey = nowPlaying.status; // playing or stopped small icon
+        activityData.smallImageText = nowPlaying.status; // playing or stoppped icon hover
     }
 
     if (nowPlaying.status == 'playing') {
@@ -432,7 +436,6 @@ async function updateStatus(nowPlaying, isForced = false) {
 
     rpc.setActivity(activityData);
     console.log(' updated rich presence');
-
 }
 
 // rpc.on('ready', () => { // no idea why this stopped working
