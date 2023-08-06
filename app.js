@@ -271,26 +271,26 @@ async function updateStatus(nowPlaying, isForced = false) {
         rpc.clearActivity();
         return
     }
+
+    let isMetadataMissing = false;
+    let isAlbumMissing = false;
     if (!metadata.title) {
         if (metadata.title.length < 1) {
-            console.warn('[warn] Missing track name');
-            rpc.clearActivity();
-            return;
+            isMetadataMissing = true;
+            metadata.title = 'unknown title';
         }
     }
     if (!metadata.album) {
         if (metadata.album.length < 1) {
-            console.warn('[warn] Missing album name');
-            rpc.clearActivity();
-            return;
-            // todo: there are track without albums, fix this later
+            isAlbumMissing = true;
+            nowPlaying.url = 'missing-cover';
+            metadata.album = 'unknown album';
         }
     }
     if (!metadata.artist) {
         if (metadata.artist.length < 1) {
-            console.warn('[warn] Missing artist name');
-            rpc.clearActivity();
-            return;
+            isMetadataMissing = true;
+            metadata.artist = 'unknown artist';
         }
     }
 
@@ -302,7 +302,21 @@ async function updateStatus(nowPlaying, isForced = false) {
         metadata.album != nowPlaying.album
     ) {
         isMetadataUpdated = true;
-        console.log(`[song] ${metadata.title} - ${metadata.artist} (album: ${metadata.album})`);
+        if (!isMetadataMissing) {
+            console.log(`[song] ${metadata.title} - ${metadata.artist} (album: ${metadata.album})`);
+            if (isAlbumMissing) {
+                console.log(' -> Missing album name');
+            }
+        }
+    }
+
+    // Without track or artist name rpc is disabled
+    if (isMetadataMissing) {
+        if (isMetadataUpdated) {
+            console.log('[warn] Missing artist or song name. Discord status disabled for this track');
+        }
+        rpc.clearActivity();
+        return;
     }
 
     // Checking if music is playing or stopped
@@ -357,7 +371,7 @@ async function updateStatus(nowPlaying, isForced = false) {
     }
 
     // Checking if needed to fetch new album cover url
-    if (metadata.album != nowPlaying.album && isMetadataUpdated) {
+    if (metadata.album != nowPlaying.album && isMetadataUpdated && !isAlbumMissing) {
         nowPlaying.url = urlCache(metadata.artist, metadata.album);
         if (nowPlaying.url == '') {
             nowPlaying.url = await fetchAlbumUrl(metadata.artist, metadata.album);
