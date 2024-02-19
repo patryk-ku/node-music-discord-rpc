@@ -1,16 +1,16 @@
 # node-music-discord-rpc
 
+> **⚠️ I have rewritten this script in Rust and I highly recommend using Rust version over this as it is way lighter and faster, link to: [Rust version](https://github.com/patryk-ku/mpris-discord-rpc)**
+
 Discord music rich presence status with **support for album covers** and optional buttons with links to your last.fm profile and to search current song on YouTube.
 
 ![example](https://github.com/patryk-ku/node-music-discord-rpc/assets/38609910/8e664517-8841-42fa-9a1e-876fc5ee4c30)
 
 ![discord-rpc1](https://github.com/patryk-ku/node-music-discord-rpc/assets/38609910/8ae30e1d-ef0f-453c-9cca-e9f52ef45b8e)
 
-![discord-rpc2](https://github.com/patryk-ku/node-music-discord-rpc/assets/38609910/f6090454-c6cf-4e00-8783-27cd5e1c3f08)
-
 Written in JavaScript. It can be used without locally installed node.js because it is packaged as a stand-alone executable file.
 
-**Currently only Linux is supported.** Support for Windows in the future.
+**Currently only Linux is supported.** Support for Windows/MacOS ~~in the future~~ never (because these OS's lack a universal way to detect the currently playing song).
 
 > **⚠️ Notice:** It's in pre-alpha state of development and may not work properly. Expect bugs, errors etc.
 
